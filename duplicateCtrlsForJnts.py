@@ -4,9 +4,9 @@
 
 from maya import cmds
 
+selObj = cmds.ls(sl=True)
 def createCtrlsForJnts(cns, offset):
 
-    selObj = cmds.ls(sl=True)
     ctrl = selObj[-1]
     newCtrls = [ctrl]
 
@@ -126,4 +126,9 @@ def onConstrainClick(*args):
 def onCloseClick(*args):
     cmds.deleteUI("Constraints")
 
-showToolWindow()
+if len(selObj) <1:
+    cmds.confirmDialog(t="No shapes selected", m="Select objects." )
+elif len(selObj) < 2:
+    cmds.confirmDialog(t="Not enough objects", m="Select object(s) or joint(s) and lastly, controller.")
+else:
+    showToolWindow()
