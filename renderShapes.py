@@ -12,6 +12,9 @@ from maya import cmds
 selObj = cmds.ls(sl=True)
 objLen = len(selObj)
 
+if selObj < 1:
+    cmds.cmds.confirmDialog(t="No shapes selected", m="Select object(s)." )
+
 # confirm whether to render or not
 renderDialog = cmds.confirmDialog(
     title = "Render objects",
