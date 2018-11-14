@@ -9,6 +9,9 @@ This repo is meant to aid me in studing and researching new methods for Python s
 
 ## Tools and Scripts
 
+### zeroAttrs
+Select control(s) and run to zero out every unlocked transform and attribute, including customs such as enums.
+
 ### combineShapes (WIP)
 Select shapes (mostly meant for nurbs) to combine into a single node.
 
