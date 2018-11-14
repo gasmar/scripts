@@ -1,12 +1,25 @@
 '''
 * AUTHOR: Gretchen Asmar *
+
+DUPLICATE CONTROLS FOR JOINT CHAIN
+
+Creates controllers for selected joint hierarchy. User has the choice to constrain
+the joints to the controllers and/or parent the controllers to follow the joint hierarchy.
+
+INSTRUCTIONS:
+Select joint hierarchy first, and then one control you want to duplicate for the rest
+of the hierarchy.
+Choose whether to maintain offset on controllers and/or parent them to follow the joint
+hierarchy order.
 '''
 
 from maya import cmds
 
-def createCtrlsForJnts(cns, offset):
+selObj = cmds.ls(sl=True)
 
-    selObj = cmds.ls(sl=True)
+
+def createCtrlsForJnts(cns, offset, parent):
+
     ctrl = selObj[-1]
     newCtrls = [ctrl]
 
@@ -16,27 +29,28 @@ def createCtrlsForJnts(cns, offset):
 
         # First joint in hierarchy constrains the controller
         if i == 0:
-            cmds.delete( cmds.parentConstraint(selObj[0], ctrl, maintainOffset=offset) )
+            cmds.delete(
+                cmds.parentConstraint(selObj[0], ctrl, maintainOffset=offset))
 
         # check if user wants to constrain jnts
         # constrain the first selected jnt to the initial ctrl (or not) and then break loop
-        elif i == len(selObj) -1 and cns == "Point":
+        elif i == len(selObj) - 1 and cns == "Point":
             cmds.pointConstraint(ctrl, selObj[0], maintainOffset=True)
             break
-        elif i == len(selObj) -1 and cns == "Orient":
+        elif i == len(selObj) - 1 and cns == "Orient":
             cmds.orientConstraint(ctrl, selObj[0], maintainOffset=True)
             break
-        elif i == len(selObj) -1 and cns == "Scale":
+        elif i == len(selObj) - 1 and cns == "Scale":
             cmds.scaleConstraint(ctrl, selObj[0], maintainOffset=True)
             break
-        elif i == len(selObj) -1 and cns == "Parent":
+        elif i == len(selObj) - 1 and cns == "Parent":
             cmds.parentConstraint(ctrl, selObj[0], maintainOffset=True)
             break
-        elif i == len(selObj) -1 and cns == "Parent and Scale":
+        elif i == len(selObj) - 1 and cns == "Parent and Scale":
             cmds.parentConstraint(ctrl, selObj[0], maintainOffset=True)
             cmds.scaleConstraint(ctrl, selObj[0], maintainOffset=True)
             break
-        elif i == len(selObj) -1 and cns == "Don't Constrain":
+        elif i == len(selObj) - 1 and cns == "Don't Constrain":
             break
 
         # steps to follow
@@ -46,9 +60,13 @@ def createCtrlsForJnts(cns, offset):
             # add to list
             newCtrls.append(newCtrl)
             # snap to joint
-            cmds.delete( cmds.pointConstraint( selObj[i], newCtrls[i], maintainOffset=False ) )
+            cmds.delete(
+                cmds.pointConstraint(
+                    selObj[i], newCtrls[i], maintainOffset=offset))
             # user chooses "Maintain Offset" value
-            cmds.delete( cmds.parentConstraint(selObj[i], newCtrls[i], maintainOffset=offset) )
+            cmds.delete(
+                cmds.parentConstraint(
+                    selObj[i], newCtrls[i], maintainOffset=offset))
 
             # user has choice to constrain joints to ctrls
             if cns == "Point":
@@ -72,21 +90,25 @@ def createCtrlsForJnts(cns, offset):
     for i in range(len(newCtrls)):
 
         # break loop if it reaches end of index
-        if i == len(newCtrls) -1:
+        if i == len(newCtrls) - 1:
             break
-        cmds.parent(newCtrls[i], newCtrls[i+1])
+        # check if user wants to parent hierarchy
+        elif parent:
+            cmds.parent(newCtrls[i], newCtrls[i + 1])
         # print "%s PARENTED TO --> %s" %(newCtrls[i], newCtrls[i+1])
 
-    #select the ctrls in order to test immediately
+    # select the ctrls in order to test immediately
     cmds.select(ctrl, hi=True)
     # freeze transformations
     cmds.makeIdentity(apply=True)
+
 
 def showToolWindow():
 
     # window display
     name = "Constraints"
-    window = cmds.window(name, width=200, height=55, s=True, query=True, exists=True)
+    window = cmds.window(
+        name, width=200, height=55, s=True, query=True, exists=True)
 
     # if window exists, close and reopen
     if window:
@@ -104,7 +126,10 @@ def showToolWindow():
     cmds.radioButton(label="Parent")
     cmds.radioButton(label="Parent and Scale")
     cmds.radioButton(label="Don't Constrain")
-    offsetCB = cmds.checkBox("cnsOffsetCB", label="Maintain Offset", value=False)
+    offsetCB = cmds.checkBox(
+        "cnsOffsetCB", label="Maintain Offset", value=False)
+    offsetCB = cmds.checkBox(
+        "parentHiCB", label="Parent Hierarchy", value=True)
 
     # Constrain or Cancel operation
     cmds.button(label="Constrain", command=onConstrainClick)
@@ -113,17 +138,28 @@ def showToolWindow():
     cmds.setParent(column)
     cmds.showWindow()
 
+
 # Constrain
 def onConstrainClick(*args):
     radio = cmds.radioCollection("constraintTypes", query=True, select=True)
     cns = cmds.radioButton(radio, query=True, label=True)
     offset = cmds.checkBox("cnsOffsetCB", query=True, value=True)
+    parent = cmds.checkBox("parentHiCB", query=True, value=True)
     cmds.deleteUI("Constraints")
 
-    createCtrlsForJnts(cns, offset)
+    createCtrlsForJnts(cns, offset, parent)
+
 
 # Cancel
 def onCloseClick(*args):
     cmds.deleteUI("Constraints")
 
-showToolWindow()
+
+if len(selObj) < 1:
+    cmds.confirmDialog(t="No shapes selected", m="Select objects.")
+elif len(selObj) < 2:
+    cmds.confirmDialog(
+        t="Not enough objects",
+        m="Select object(s) or joint(s) and lastly, controller.")
+else:
+    showToolWindow()

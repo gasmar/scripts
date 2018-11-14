@@ -1,9 +1,14 @@
-
 '''
 * AUTHOR: Gretchen Asmar *
 
+RENDER STATS SWITCH
+
 Turns render stats on or off for selected object(s)
 This is ideal for geometry controls!
+
+INSTRUCTIONS:
+Select object(s) and, when prompted, choose whether to 
+turn render stats on or off.
 '''
 
 from maya import cmds
@@ -12,15 +17,17 @@ from maya import cmds
 selObj = cmds.ls(sl=True)
 objLen = len(selObj)
 
+if selObj < 1:
+    cmds.cmds.confirmDialog(t="No shapes selected", m="Select object(s).")
+
 # confirm whether to render or not
 renderDialog = cmds.confirmDialog(
-    title = "Render objects",
-    message = 'Render stats for selected object(s)?',
-    button = ['ON', 'OFF', 'Cancel'],
-    defaultButton = 'OFF',
-    cancelButton = 'Cancel',
-    dismissString = 'Cancel'
-)
+    title="Render objects",
+    message='Render stats for selected object(s)?',
+    button=['ON', 'OFF', 'Cancel'],
+    defaultButton='OFF',
+    cancelButton='Cancel',
+    dismissString='Cancel')
 
 for i in range(objLen):
     # turn render stats OFF
@@ -37,6 +44,7 @@ for i in range(objLen):
 
     # turn render stats ON
     elif renderDialog == 'ON':
+        strObj = str(selObj[i])
         cmds.setAttr(strObj + ".castsShadows", 1)
         cmds.setAttr(strObj + ".receiveShadows", 1)
         cmds.setAttr(strObj + ".motionBlur", 1)
