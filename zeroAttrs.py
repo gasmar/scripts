@@ -1,6 +1,11 @@
 '''
 * AUTHOR: Gretchen Asmar *
 
+ZERO ATTRS
+
+Zero out object transforms.
+
+INSTRUCTIONS:
 Select all controllers (or objects) you want to zero out and run code.
 '''
 
@@ -13,13 +18,23 @@ objs = len(selObj)
 for i in range(objs):
     # accessible attributes
     # these flags will keep unwanted attributes untouched
-    objAttrs = cmds.listAttr(selObj[i], w=True, s=True, v=True, c=True, k=True, u=True, se=True, o=True, lf=True)
+    objAttrs = cmds.listAttr(
+        selObj[i],
+        w=True,
+        s=True,
+        v=True,
+        c=True,
+        k=True,
+        u=True,
+        se=True,
+        o=True,
+        lf=True)
     attrs = len(objAttrs)
 
     for j in range(attrs):
         # find attr channel full name
         attrChannel = selObj[i] + "." + objAttrs[j]
-        
+
         # set scale channels to 1
         if objAttrs[j] == "scaleX":
             cmds.setAttr(attrChannel, 1)

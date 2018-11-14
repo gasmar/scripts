@@ -3,6 +3,8 @@
 
 MESH OPTIMIZER FOR GAME ENGINES
 
+Optimizes and cleans up meshes for game engine use.
+
 INSTRUCTIONS:
 - select mesh(es) with locally desired pivot position
 - run script, it will:
@@ -14,7 +16,7 @@ INSTRUCTIONS:
 
 from maya import cmds
 
-# get selected objects
+# elected objects
 objs = cmds.ls(os=True)
 
 
@@ -28,13 +30,13 @@ def gameOpt():
         cancelButton='No',
         dismissString='No')
 
-    # this softens the mesh's edges, should the user click 'Yes'
+    # soften the mesh's edges, should the user click 'Yes'
     if softenEdgeDialogue == 'Yes':
         for i in objs:
             cmds.select(i)
             cmds.polySoftEdge(a=180)
 
-    # this runs optimization commands for game engine
+    # run optimization commands for game engine
     for i in objs:
         cmds.select(i)
         cmds.snapMode(gr=True)

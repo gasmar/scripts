@@ -44,6 +44,7 @@ for i in range(objLen):
 
     # turn render stats ON
     elif renderDialog == 'ON':
+        strObj = str(selObj[i])
         cmds.setAttr(strObj + ".castsShadows", 1)
         cmds.setAttr(strObj + ".receiveShadows", 1)
         cmds.setAttr(strObj + ".motionBlur", 1)
