@@ -15,3 +15,30 @@ setAttr "locator1.rotateZ" 0;
 setAttr "locator1.rotateX" 0;
 setAttr "locator1.rotateY" 0;
 '''
+
+from maya import cmds
+
+selObj = cmds.ls(sl=True)
+lct = selObj[0]
+crv = selObj[1]
+
+
+def attachLctToCrv():
+    motionPath = cmds.pathAnimation(
+        fm=True, f=True, fa="x", ua="y", wut="vector")
+    sel = cmds.select(motionPath)
+    print "SEL: ", sel
+
+    cmds.disconnectAttr(motionPath + ".u")
+    cmds.setAttr(motionPath + ".uvalue", .5)
+
+    cmds.disconnectAttr(lct + ".rx")
+    cmds.disconnectAttr(lct + ".ry")
+    cmds.disconnectAttr(lct + ".rz")
+
+
+if len(selObj) > 2:
+    print("NOP")
+else:
+    attachLctToCrv()
+    print("success")
