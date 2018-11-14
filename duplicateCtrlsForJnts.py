@@ -62,7 +62,7 @@ def createCtrlsForJnts(cns, offset, parent):
             # snap to joint
             cmds.delete(
                 cmds.pointConstraint(
-                    selObj[i], newCtrls[i], maintainOffset=False))
+                    selObj[i], newCtrls[i], maintainOffset=offset))
             # user chooses "Maintain Offset" value
             cmds.delete(
                 cmds.parentConstraint(
