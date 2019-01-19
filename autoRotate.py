@@ -51,8 +51,8 @@ def autoRotate():
     offset_ctrl = offsetCtrl(auto_rotate_ctrl)
     cmds.parent(center_locator, auto_rotate_ctrl[0])
     cmds.makeIdentity(offset_ctrl, apply=True)
-    utils.attrLockAndHide(offset_ctrl[0])
     cmds.xform(offset_ctrl, centerPivots=True)
+    utils.attrLockAndHide(offset_ctrl, 'tx ty tz ry rz sx sy sz v')
 
     # expression that drives autoRotate group's rotateX and offset attribute
     wheelExpression(auto_rotate_grp+'.rotateX', auto_rotate_ctrl[0], auto_rotate_grp, distance)
@@ -78,9 +78,9 @@ def baseLocators():
     '''Locators for wheel measurements.'''
     name = '%s_%s' % (utils.side(), utils.description())
 
-    dist1_locator = utils.utils.createLocator(name+'_wheelDist01_LOC', 0, 0, 0)
-    dist2_locator = utils.utils.createLocator(name+'_wheelDist02_LOC', 0, 0, 0)
-    center_locator = utils.utils.createLocator(name+'_wheelCenter_LOC', 0, 0, 0)
+    dist1_locator = utils.createLocator(name+'_wheelDist01_LOC', 0, 0, 0)
+    dist2_locator = utils.createLocator(name+'_wheelDist02_LOC', 0, 0, 0)
+    center_locator = utils.createLocator(name+'_wheelCenter_LOC', 0, 0, 0)
     distance_grp = cmds.group(center_locator, dist1_locator, dist2_locator, name=name+'_locs_GRP')
 
     cmds.move(0, 0, 1, dist1_locator)
@@ -98,7 +98,7 @@ def baseLocators():
 
 def measureWheelDistance(name, dist1, dist2):
     '''Distance node to find wheel diameter.'''
-    name = name + '_DIST'
+    name = '%s_DIST' % (name)
 
     distance = cmds.distanceDimension(startPoint=dist1, endPoint=dist2)
     distance = cmds.rename('distanceDimension1', name)
@@ -127,7 +127,7 @@ def autoRotateCtrl(locator):
     cmds.delete(cmds.parentConstraint(locator, auto_rotate_ctrl))
 
     inputs = cmds.listHistory(auto_rotate_ctrl)
-    normal_x = str(inputs[1])+'.normalX'
+    normal_x = str('%s.normalX') % (inputs[1])
     cmds.setAttr(normal_x, 90)
 
     # returns ctrl that drives the autoRotate grp
@@ -139,9 +139,9 @@ def offsetCtrl(auto_rotate_ctrl):
 
     offset_ctrl = cmds.circle(name=name)
     inputs = cmds.listHistory(offset_ctrl)
-    wheel_radius = str(inputs[1])+'.radius'
-    normal_x = str(inputs[1])+'.normalX'
-    center_x = str(inputs[1])+'.centerX'
+    wheel_radius = '%s.radius' % (inputs[1])
+    normal_x = '%s.normalX' % (inputs[1])
+    center_x = '%s.centerX' % (inputs[1])
 
     utils.snap(auto_rotate_ctrl, offset_ctrl)
 
