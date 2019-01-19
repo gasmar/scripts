@@ -57,27 +57,60 @@ def createLocator(name, x, y, z):
     return loc 
 
 
-def attrLockAndHide(sel):
-    cmds.setAttr(sel+'.tx', lock=True, keyable=False, channelBox=False)
-    cmds.setAttr(sel+'.ty', lock=True, keyable=False, channelBox=False)
-    cmds.setAttr(sel+'.tz', lock=True, keyable=False, channelBox=False)
-    cmds.setAttr(sel+'.ry', lock=True, keyable=False, channelBox=False)
-    cmds.setAttr(sel+'.rz', lock=True, keyable=False, channelBox=False)
-    cmds.setAttr(sel+'.sx', lock=True, keyable=False, channelBox=False)
-    cmds.setAttr(sel+'.sy', lock=True, keyable=False, channelBox=False)
-    cmds.setAttr(sel+'.sz', lock=True, keyable=False, channelBox=False)
-    cmds.setAttr(sel+'.v', lock=True, keyable=False, channelBox=False)
-
-
-# def attrLockAndHide(sel, exceptions):
-#     sel = cmds.ls(selection=True)
-    
-#     for each in sel:
-#         attrs = cmds.listAttr(each, keyable=True)
+def attrLockAndHide(sel, exceptions):
+    '''Lock and hide attributes based on user input, separated by spaces.'''
+    for each in sel:
+        attrs = cmds.listAttr(each, keyable=True) 
         
-#         if exceptions == 'all':
-#             for attr in attrs:
-#                 channel = '%s.%s' % (each, attr)
-#                 cmds.setAttr(channel, lock=True, keyable=False, channelBox=False)
+        if exceptions == 'all':
+            print exceptions
+            for attr in attrs:
+                channel = '%s.%s' % (each, attr)
+                cmds.setAttr(channel, lock=True, keyable=False, channelBox=False)
+                
+        elif exceptions != 'all':
+            transforms = exceptions.split(' ')
+            
+            for attr in range(len(transforms)):
+                try:
+                    
+                    channel = '%s.%s' % (each, transforms[attr])
+                    cmds.setAttr(channel, lock=True, keyable=False, channelBox=False)
+                    print 'LOCKED: ', channel
+                except:
+                    
+                    print channel, ' doesn\'t exist.'
 
-#                 return 'DONE'
+    return channel
+
+
+def getInputs(sel):
+    '''Get object input attributes.'''
+    if len(sel) > 1:
+        cmds.confirmDialog(
+                           title='Too many objects.', 
+                           message='Inputs can only be listed for one object at a time.'
+                           )
+        cmds.error('Inputs can only be listed for one object at a time.')
+        
+    for each in range(len(sel)):
+        each = sel[each]
+        input_attrs = []
+        
+        try:
+            inputs = cmds.listHistory(each, pruneDagObjects=True, historyAttr=False)
+            attrs = cmds.listAttr(inputs)
+            
+            for input in inputs:
+                print 'INPUT: ', input
+                
+                for attr in attrs:
+                    print '  -- %s.%s' % (input, attr)
+                    
+                    input_attrs.append('%s.%s' % (input, attr))
+                
+        except:
+            print 'No inputs on -- %s --' % (each)
+            
+    # returns a list with every input attribute
+    return input_attrs
