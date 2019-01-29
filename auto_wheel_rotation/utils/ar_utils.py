@@ -22,6 +22,7 @@ def selection():
         return items
     else:
         cmds.warning('NOTHING! NOTHING I TELL YOU!')
+        return False
 
 
 def snap(*args):
@@ -163,3 +164,14 @@ def getInputs(sel):
             
     # returns a list with every input attribute
     return input_attrs
+    
+def undo(func):
+    '''Chunk undo function for long processes.'''
+    def wrapper(*args, **kwargs):
+        cmds.undoInfo(openChunk=True)
+        try:
+            ret = func(*args, **kwargs)
+        finally:
+            cmds.undoInfo(closeChunk=True)
+        return ret
+    return wrapper

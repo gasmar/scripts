@@ -16,8 +16,9 @@ class AutoRotateDialog(qw.QDialog):
     '''Main dialog class.'''
     WINDOW_TITLE = 'Auto Rotate'
     
-    MINIMUM_WIDTH = 250
-    MINIMUM_HEIGHT = 120
+    MINIMUM_WIDTH = 420
+    MINIMUM_HEIGHT = 160
+    BTN_HEIGHT = 26
     
     dialog_instance = None
     
@@ -72,26 +73,48 @@ class AutoRotateDialog(qw.QDialog):
         self.add_btn.setIcon(qg.QIcon(':selectObject.png'))
         self.add_btn.setToolTip('Add selection.')
         
+        self.clear_btn      = qw.QPushButton('Clear')
+        self.clear_btn.setToolTip('Clear selection line.')
+        self.clear_btn.setFixedHeight(self.BTN_HEIGHT)
+        
+        self.option_combobox = qw.QComboBox()
+        self.option_combobox.addItems(['World axis', 'Manual'])
+                
         self.create_btn     = qw.QPushButton()
         self.create_btn.setIcon(qg.QIcon(':create.png'))
         self.create_btn.setToolTip('Create')
+        self.create_btn.setFixedSize(40, 26)
         
-        self.connect_btn     = qw.QPushButton()
+        self.connect_btn    = qw.QPushButton()
         self.connect_btn.setIcon(qg.QIcon(':mergeConnections.png'))
         self.connect_btn.setToolTip('Connect')
+        self.connect_btn.setFixedSize(40, 26)
         
-        self.disconnect_btn  = qw.QPushButton()
+        self.disconnect_btn = qw.QPushButton()
         self.disconnect_btn.setIcon(qg.QIcon(':deletePoint.png'))
         self.disconnect_btn.setToolTip('Break auto rotation connections and delete nodes.')
-        
-        self.create_btn.setToolTip('Create')
-        self.cancel_btn     = qw.QPushButton('Cancel')
+        self.disconnect_btn.setFixedSize(40, 26)
         
         self.z_radio        = qw.QRadioButton('Z')
         self.z_radio.setChecked(True)
         self.z_neg_radio    = qw.QRadioButton('-Z')
         self.x_radio        = qw.QRadioButton('X')
         self.x_neg_radio    = qw.QRadioButton('-X')
+        
+        self.rotate_slider  = qw.QSlider()
+        self.rotate_slider.setFixedWidth(180)
+        self.rotate_slider.setRange(-360, 360)
+        self.rotate_slider.setOrientation(qc.Qt.Horizontal)
+        self.rotate_slider.setVisible(False)
+        
+        self.rotate_spin    = qw.QSpinBox()
+        self.rotate_spin.setRange(-360, 360)
+        self.rotate_spin.setFixedWidth(50)
+        self.rotate_spin.setVisible(False)
+        
+        self.cancel_btn     = qw.QPushButton('Cancel')
+        self.cancel_btn.setFixedHeight(self.BTN_HEIGHT)
+        
 
     def createLayouts(self):
         '''Layouts to hold widgets.'''
@@ -101,33 +124,45 @@ class AutoRotateDialog(qw.QDialog):
         selection_layout.addWidget(self.name_label)
         selection_layout.addWidget(self.line_edit)
         selection_layout.addWidget(self.add_btn)
-
+        selection_layout.addWidget(self.clear_btn)
+        
         buttons_layout   = qw.QHBoxLayout(self)
         buttons_layout.addWidget(self.create_btn)
         buttons_layout.addWidget(self.connect_btn)
         buttons_layout.addWidget(self.disconnect_btn)
+        buttons_layout.addSpacerItem(qw.QSpacerItem(5, 5, qw.QSizePolicy.Expanding))
         buttons_layout.addWidget(self.cancel_btn)
-        buttons_layout.addStretch()
         
         radio_layout     = qw.QHBoxLayout(self)
+        radio_layout.addWidget(self.option_combobox)
         radio_layout.addWidget(self.z_radio)
         radio_layout.addWidget(self.z_neg_radio)
         radio_layout.addWidget(self.x_radio)
         radio_layout.addWidget(self.x_neg_radio)
+        radio_layout.addWidget(self.rotate_slider)
+        radio_layout.addWidget(self.rotate_spin)
         radio_layout.setSpacing(40)
         radio_layout.setContentsMargins(0, 10, 0, 10)
         radio_layout.addStretch()
-
+        
         main_layout.addLayout(selection_layout)
         main_layout.addLayout(radio_layout)
         main_layout.addLayout(buttons_layout)
         main_layout.setContentsMargins(5, 10, 5, 10)
-        main_layout.setSpacing(10)
+        main_layout.setSpacing(20)
         main_layout.setAlignment(qc.Qt.AlignTop)
+        
 
     def createConnections(self):
         '''Emitted signals for functionality.'''
         self.add_btn.clicked.connect(self.onAddSelection)
+        self.clear_btn.clicked.connect(self.onClear)
+        
+        self.option_combobox.currentIndexChanged.connect(self.onOption)
+        
+        self.rotate_slider.valueChanged.connect(self.rotate_spin.setValue)
+        self.rotate_spin.valueChanged.connect(self.rotate_slider.setValue)
+                
         self.create_btn.clicked.connect(self.onCreateClick)
         self.connect_btn.clicked.connect(self.onConnectClick)
         self.disconnect_btn.clicked.connect(self.onDisconnectClick)
@@ -137,7 +172,25 @@ class AutoRotateDialog(qw.QDialog):
     def onAddSelection(self):
         '''Add selection string to line_edit.'''
         selection = aru.selection()
+        
+        if selection == False:
+            return cmds.warning('Please select object(s) to add to list.')
+            
         self.line_edit.setText(selection)
+        
+    def onClear(self):
+        '''Clear line_edit text.'''
+        self.line_edit.setText('')
+        
+    def onOption(self, index):
+        '''Toggle visibility for wheel orientation options.'''
+        self.rotate_spin.setVisible(index)
+        self.rotate_slider.setVisible(index)
+        
+        self.z_radio.setVisible(not(index))
+        self.z_neg_radio.setVisible(not(index))
+        self.x_radio.setVisible(not(index))
+        self.x_neg_radio.setVisible(not(index))
 
     def onCreateClick(self):
         '''Create nodes for wheel rotation.'''
@@ -145,17 +198,25 @@ class AutoRotateDialog(qw.QDialog):
         targets = targets.split(' ')
         
         for each in targets:
-            # check for a parent
-            check_parent = aru.checkParent(each)
-            # check if target(s) have an auto rotate setup
-            check_connection = aru.checkForExistingAutoRotate(each)
-            
-            if check_connection == True:
-                cmds.warning('Object is already connected to an auto rotation system.')    
+            # check for false target or no target at all
+            if not each:
+                return cmds.warning('No target assigned.')
+            elif cmds.objExists(each) == False:
+                cmds.warning(each, ' doesn\'t exist.')
                 continue
                 
+            # check for a parent
+            check_parent = aru.checkParent(each)
+            # check for auto rotate setup on current target
+            check_connection = aru.checkForExistingAutoRotate(each)
+            
+            # target is connected to an auto rotation system
+            if check_connection == True:
+                cmds.warning('Object is already connected to an auto rotation system.')
+                continue
+                
+            # if no parent, target is grouped to a world level node
             if check_parent != True:
-                # if no parent, target is grouped to a world level node
                 name=check_parent
                 cmds.group(each, name=name)
                 
@@ -172,8 +233,23 @@ class AutoRotateDialog(qw.QDialog):
         targets = self.line_edit.text()
         targets = targets.split(' ')
         
-        for each in targets:            
+        for each in targets:
+            # check for false target or no target at all
+            if not each:
+                return cmds.warning('No target assigned.')
+            elif cmds.objExists(each) == False:
+                cmds.warning(each, ' doesn\'t exist.')
+                continue
+            # check for auto rotate setup on current target
+            check_connection = aru.checkForExistingAutoRotate(each)
+            
+            # target is not connected to an auto rotation system
+            if check_connection == False:
+                return cmds.warning('Object is not connected to an auto rotation system.')
+            
+            # aru.undo(autoRotate.deleteAutoRotate(each))    
             autoRotate.deleteAutoRotate(each)
+            
         
     def showEvent(self, event):
         '''Event to signal showing of window (for position purposes).'''

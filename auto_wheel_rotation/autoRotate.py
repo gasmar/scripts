@@ -3,7 +3,9 @@ from maya import mel
 import utils.ar_utils as utils
 reload(utils)
 
+# undo = 
 
+# @undo
 def base(sel):
     '''Create base locators to measure wheel.'''
     if len(sel) < 1:
@@ -102,7 +104,7 @@ def deleteAutoRotate(sel):
     disconnect_nodes = []
     
     wheel = sel
-    # wheel = sel
+    loc_grp = '%s_locs_GRP' % (name)
     dist1_locator = '%s_wheelDist01_LOC' % (name)
     dist2_locator = '%s_wheelDist02_LOC' % (name)
     expression = '%s_autoRotate_EXP' % (name)
@@ -121,25 +123,42 @@ def deleteAutoRotate(sel):
     
     if cmds.objExists(wheel):
         cmds.parent(wheel, world=True)
+    else:
+        pass
 
     if cmds.objExists(expression):
         disconnect_nodes.append(expression)
+    else:
+        pass
         
     if cmds.objExists(orient_grp):
         disconnect_nodes.append(orient_grp)
+    else:
+        pass
         
     if cmds.objExists(auto_rotate_control):
         disconnect_nodes.append(auto_rotate_control)
+    else:    
+        pass
         
     if cmds.objExists(world_group_node):
         disconnect_nodes.append(world_group_node)
+    else:
+        pass
         
     if cmds.objExists(dist1_locator):
         disconnect_nodes.append(dist1_locator)
+    else:
+        pass
         
     if cmds.objExists(dist2_locator):
         disconnect_nodes.append(dist2_locator)
+    else:
+        pass
     
+    if cmds.objExists(loc_grp):
+        disconnect_nodes.append(loc_grp)
+        
     print 'DISCONNECT NODES: ', disconnect_nodes
     cmds.delete(disconnect_nodes)    
     
