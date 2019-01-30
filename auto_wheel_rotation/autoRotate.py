@@ -1,64 +1,57 @@
 from maya import cmds
-from maya import mel
 import utils.ar_utils as utils
 reload(utils)
 
-# undo = 
 
-# @undo
-def base(sel):
+def base(wheel):
     '''Create base locators to measure wheel.'''
-    if len(sel) < 1:
+    if len(wheel) < 1:
         cmds.warning('Please select wheel(s).')
         return
         
-    name = '%s_%s' % (utils.side(sel), utils.description(sel))
-    wheel = sel
+    name = '%s_%s' % (utils.side(wheel), utils.description(wheel))
+    wheel
     # create group with locators and their respective distances
-    dist1_locator, dist2_locator, center_locator, dist1, dist2, distance_grp = baseLocators(sel)
+    dist1_locator, dist2_locator, center_locator, dist1, dist2, distance_grp = baseLocators(wheel)
     
     # create measure distance node and get diameter
-    diameter = measureWheelDistance(sel, dist1, dist2)
+    diameter = measureWheelDistance(wheel, dist1, dist2)
 
     # position the locators based on the wheel's bounding box
-    utils.placeLocators(sel, center_locator, dist1_locator, dist2_locator)
+    utils.placeLocators(wheel, center_locator, dist1_locator, dist2_locator)
     cmds.parent(diameter, distance_grp)
 
-    global base_info
-    base_info = dist1_locator, dist2_locator, center_locator, dist1, dist2, diameter, distance_grp, wheel
-
-
-def autoRotate(sel):
+    
+def autoRotate(wheel):
     '''Create auto rotation based on diameter from base locators.'''
-    if len(sel) < 1:
+    if len(wheel) < 1:
         cmds.warning('Please select wheel(s).')
         return
-
-    wheel = base_info[-1]
-    dist1_locator = base_info[0]
-    dist2_locator = base_info[1]
-    center_locator = base_info[2]
-    distance_grp = base_info[-2]
-    distance = base_info[-3]
-
+        
+    name = '%s_%s' % (utils.side(wheel), utils.description(wheel))
+    
+    dist1_locator = '%s_wheelDist01_LOC' % (name)
+    dist2_locator = '%s_wheelDist01_LOC' % (name)
+    center_locator = '%s_wheelCenter_LOC' % (name)
+    distance_grp = '%s_locs_GRP' % (name)
+    distance = '%s_DIST' % (name)
+    
+    cmds.select(clear=True)
     cmds.select(wheel)
-    name = '%s_%s' % (utils.side(sel), utils.description(sel))
     # create group that holds autoRotate connections
-    auto_rotate_grp = autoRotateGrp(sel)
+    auto_rotate_grp = autoRotateGrp(wheel)
     cmds.addAttr(auto_rotate_grp, longName='offset', attributeType='double', defaultValue=0)
     cmds.setAttr('%s.%s' % (auto_rotate_grp, 'offset'), keyable=True)
-
     # create control to drive autoRotate grp
-    auto_rotate_ctrl = autoRotateCtrl(center_locator, sel)
+    auto_rotate_ctrl = autoRotateCtrl(center_locator, wheel)
     cmds.addAttr(auto_rotate_ctrl, longName='auto', attributeType='bool', defaultValue=1)
     cmds.setAttr('%s.%s' % (auto_rotate_ctrl[0], 'auto'), keyable=True)
     cmds.makeIdentity(auto_rotate_ctrl, apply=True)
-
     # create group that drives the autoRotate group's orientation
     orient_grp = cmds.group(auto_rotate_grp, name=name+'_orient_GRP', relative=True)
     cmds.orientConstraint(auto_rotate_ctrl, orient_grp, maintainOffset=True)
 
-    offset_ctrl = offsetCtrl(auto_rotate_ctrl, sel)
+    offset_ctrl = offsetCtrl(auto_rotate_ctrl, wheel)
     cmds.parent(center_locator, auto_rotate_ctrl[0])
     cmds.makeIdentity(offset_ctrl, apply=True)
     cmds.xform(offset_ctrl, centerPivots=True)
@@ -74,36 +67,31 @@ def autoRotate(sel):
     cmds.scaleConstraint(center_locator, auto_rotate_grp)
 
     cmds.parent(distance, auto_rotate_ctrl[0])
-    cmds.parent(dist1_locator, dist2_locator, sel)
+    cmds.parent(dist1_locator, dist2_locator, wheel)
 
     cmds.parent(wheel, offset_ctrl[0])
     cmds.parent(offset_ctrl[0], auto_rotate_grp)
     
-    world_group_node = cmds.listRelatives(orient_grp, p=True)
+    world_group_node = cmds.listRelatives(orient_grp, parent=True)
     cmds.parent(auto_rotate_ctrl[0], world_group_node)
 
     # cleanup
     cmds.setAttr(distance+'.visibility', 0)
-    cmds.setAttr(center_locator[0]+'.visibility', 0)
-    cmds.setAttr(dist1_locator[0]+'.visibility', 0)
-    cmds.setAttr(dist2_locator[0]+'.visibility', 0)
+    cmds.setAttr(center_locator+'.visibility', 0)
+    cmds.setAttr(dist1_locator+'.visibility', 0)
+    cmds.setAttr(dist2_locator+'.visibility', 0)
     cmds.delete(distance_grp)
     cmds.select(clear=True)
-    
-    global connection_nodes
-    connection_nodes = expression, orient_grp, auto_rotate_ctrl
 
-
-def deleteAutoRotate(sel):
-    
-    if len(sel) < 1:
+def deleteAutoRotate(wheel):
+    '''Find and delete auto rotation system nodes'''
+    if len(wheel) < 1:
         cmds.warning('Please select wheel(s).')
         return
         
-    name = '%s_%s' % (utils.side(sel), utils.description(sel))
+    name = '%s_%s' % (utils.side(wheel), utils.description(wheel))
     disconnect_nodes = []
     
-    wheel = sel
     loc_grp = '%s_locs_GRP' % (name)
     dist1_locator = '%s_wheelDist01_LOC' % (name)
     dist2_locator = '%s_wheelDist02_LOC' % (name)
@@ -112,17 +100,9 @@ def deleteAutoRotate(sel):
     auto_rotate_control = '%s_autoRotate_CTRL' % (name)
     world_group_node = '%s_WHEEL_GRP' % (name)
     
-    print wheel
-    print dist1_locator
-    print dist2_locator
-    print expression
-    print orient_grp
-    print auto_rotate_control
-    print world_group_node
-    print cmds.listRelatives(wheel, parent=True)
-    
     if cmds.objExists(wheel):
-        cmds.parent(wheel, world=True)
+        if cmds.listRelatives(wheel, parent=True):
+            cmds.parent(wheel, world=True)
     else:
         pass
 
@@ -159,13 +139,16 @@ def deleteAutoRotate(sel):
     if cmds.objExists(loc_grp):
         disconnect_nodes.append(loc_grp)
         
-    print 'DISCONNECT NODES: ', disconnect_nodes
     cmds.delete(disconnect_nodes)    
     
 
-def baseLocators(sel):
+
+'''--- Utils specific to autoRotate. ---'''
+
+
+def baseLocators(geo):
     '''Locators for wheel measurements.'''
-    name = '%s_%s' % (utils.side(sel), utils.description(sel))
+    name = '%s_%s' % (utils.side(geo), utils.description(geo))
 
     dist1_locator = utils.createLocator(name+'_wheelDist01_LOC', 0, 0, 0)
     dist2_locator = utils.createLocator(name+'_wheelDist02_LOC', 0, 0, 0)
@@ -185,9 +168,9 @@ def baseLocators(sel):
     return (dist1_locator, dist2_locator, center_locator, dist1, dist2, distance_grp)
 
 
-def measureWheelDistance(sel, dist1, dist2):
+def measureWheelDistance(wheel, dist1, dist2):
     '''Distance node to find wheel diameter.'''
-    name = '%s_%s_DIST' % (utils.side(sel), utils.description(sel))
+    name = '%s_%s_DIST' % (utils.side(wheel), utils.description(wheel))
 
     distance = cmds.distanceDimension(startPoint=dist1, endPoint=dist2)
     distance = cmds.rename('distanceDimension1', name)
@@ -196,11 +179,11 @@ def measureWheelDistance(sel, dist1, dist2):
     return distance
         
 
-def autoRotateGrp(sel):
+def autoRotateGrp(wheel):
     '''Group node that contains autoRotate expression and constraints.'''
-    name = '%s_%s_%s' % (utils.side(sel), utils.description(sel), 'autoRotate_GRP')
-
-    wheel = base_info[-1]
+    name = '%s_%s_%s' % (utils.side(wheel), utils.description(wheel), 'autoRotate_GRP')
+    
+    cmds.select(clear=True)
     grp = cmds.group(wheel, name=name)
 
     cmds.xform(grp, centerPivots=True)
@@ -209,8 +192,9 @@ def autoRotateGrp(sel):
     return grp
 
 
-def autoRotateCtrl(locator, sel):
-    name = '%s_%s_%s' % (utils.side(sel), utils.description(sel), 'autoRotate_CTRL')
+def autoRotateCtrl(locator, auto_rotate_ctrl):
+    '''Main control in the system that controls automatic or manual wheel rotation.'''
+    name = '%s_%s_%s' % (utils.side(auto_rotate_ctrl), utils.description(auto_rotate_ctrl), 'autoRotate_CTRL')
 
     auto_rotate_ctrl = cmds.circle(name=name)
     cmds.delete(cmds.parentConstraint(locator, auto_rotate_ctrl))
@@ -223,28 +207,35 @@ def autoRotateCtrl(locator, sel):
     return auto_rotate_ctrl
 
 
-def offsetCtrl(auto_rotate_ctrl, sel):
-    name = '%s_%s_%s' % (utils.side(sel), utils.description(sel), 'offset_CTRL')
+def offsetCtrl(auto_rotate_ctrl, offset_ctrl):
+    '''Creates offset control which drives wheel for offset rotation values.'''
+    name = '%s_%s_%s' % (utils.side(offset_ctrl), utils.description(offset_ctrl), 'offset_CTRL')
 
     offset_ctrl = cmds.circle(name=name)
     inputs = cmds.listHistory(offset_ctrl)
     wheel_radius = '%s.radius' % (inputs[1])
     normal_x = '%s.normalX' % (inputs[1])
     center_x = '%s.centerX' % (inputs[1])
+    center_z = '%s.centerZ' % (inputs[1])
 
     utils.snap(auto_rotate_ctrl, offset_ctrl)
 
-    cmds.setAttr(wheel_radius, 0.6)
     cmds.setAttr(normal_x, 90)
-    cmds.setAttr(center_x, 1)
+    cmds.setAttr(wheel_radius, 0.6)
+    
+    if utils.side(offset_ctrl) == 'l':
+        cmds.setAttr(center_x, 1)
+    elif utils.side(offset_ctrl) == 'r':
+        cmds.setAttr(center_x, -1)
+        
 
     # returns control that allows for offset, evaluated after initial rotation
     return offset_ctrl
 
 
-def wheelOrientGrp(sel):
+def wheelOrientGrp(wheel):
     '''Group node that controls proper rotation of auto wheel rot grp.'''
-    name = '%s_%s_%s' % (utils.side(sel), utils.description(sel), '_arOrient_GRP')
+    name = '%s_%s_%s' % (utils.side(wheel), utils.description(wheel), '_arOrient_GRP')
 
     grp = cmds.group(name=name)
 
@@ -252,20 +243,37 @@ def wheelOrientGrp(sel):
     return grp
 
 
-def wheelExpression(target, auto, offset, dist, sel):
+def wheelExpression(target, auto, offset, dist, wheel):
     '''Math that controls how the wheel will procedurally rotate.'''
-    name = '%s_%s_%s' % (utils.side(sel), utils.description(sel), 'autoRotate_EXP')
+    name = '%s_%s_%s' % (utils.side(wheel), utils.description(wheel), 'autoRotate_EXP')
 
-    string = '''
-                if (%s.auto == 1 ) {
-                    $diff = %s.translateZ - %s.offset ;
-                    %s.rotateX -= $diff * -360 / (%s.distance*3.14); 
-                }; 
-                %s.offset = %s.translateZ ;
-
-                ''' % (auto, offset, offset, offset, dist, offset, offset)
+    string = "  if (%s.auto == 1 ) {                                  \
+                    $diff = %s.translateZ - %s.offset ;               \
+                    %s.rotateX -= $diff * -360 / (%s.distance*3.14);  \
+                };                                                    \
+                %s.offset = %s.translateZ ; " % (auto, offset, offset, offset, dist, offset, offset)
 
     expression = cmds.expression(name=name, object=target, string=string, alwaysEvaluate=True)
 
     # returns expression with math to achieve automatic rotation based on diameter
     return expression
+    
+    
+def checkForAutoRotateBase(target):
+    '''Check selection for base setup by finding initial distance node.'''
+    distance_node = '%s_%s_DIST' % (utils.side(target), utils.description(target))
+    
+    if cmds.objExists(distance_node):
+        return True
+    else:
+        return False
+
+
+def checkForAutoRotateConnections(target):
+    '''Check selection for expression node driving auto rotation system.'''
+    expression = '%s_%s_autoRotate_EXP' % (utils.side(target), utils.description(target))
+    
+    if cmds.objExists(expression):
+        return True
+    else:
+        return False

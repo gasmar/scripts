@@ -11,14 +11,14 @@ def demmet():
 
 def selection():
     '''Get selection names.'''
-    sel = cmds.ls(selection=True)
-    selList = []
+    targets = cmds.ls(selection=True)
+    target_list = []
 
-    if sel:
-        for each in sel:
-            selList.append(each)
+    if targets:
+        for trg in targets:
+            target_list.append(trg)
 
-        items = ' '.join(selList)
+        items = ' '.join(target_list)
         return items
     else:
         cmds.warning('NOTHING! NOTHING I TELL YOU!')
@@ -30,48 +30,21 @@ def snap(*args):
     cmds.delete(cmds.parentConstraint(*args))
 
 
-def checkParent(sel):
+def checkParent(target):
+    '''Check selection parent(s), if any.'''
     parent = cmds.listRelatives(parent=True)
     
     if not parent:
-        new_parent_name = '%s_%s_%s' % (side(sel), description(sel), 'WHEEL_GRP')
-        # group_geo = cmds.group(sel, name=name)
-        # return group_geo
+        new_parent_name = '%s_%s_%s' % (side(target), description(target), 'WHEEL_GRP')
         return new_parent_name
     else:
-        # return parent
         return True
 
 
-def checkForExistingAutoRotate(sel):
-    locator = '%s_%s_autoRotate_EXP' % (side(sel), description(sel))
-    print locator
-    if cmds.objExists(locator):
-        return True
-    else:
-        return False
-
-
-def description(sel):
-    '''Get descriptionription by removing prefixes or suffixes.'''
-    name = sel.split('_')
-    for each in sel:
-        
-        if name[0] == 'ANIM':
-            description = name[2]
-        elif name[0] == 'c' or name[0] == 'l' or name[0] == 'r':
-            description = name[1]    
-        else:
-            description = name[0]
-
-        # returns selected object(s)' description string
-        return str(description)
-
-
-def side(sel):
+def side(targets):
     '''Find the object side (if there is one).'''
-    for each in sel:
-        name = each.split('_')
+    for trg in targets:
+        name = trg.split('_')
 
         if name[0] == 'ANIM':
             side = name[1]
@@ -82,6 +55,22 @@ def side(sel):
 
         # returns selected object(s)' side string
         return str(side)
+        
+        
+def description(targets):
+    '''Get descriptionription by removing prefixes or suffixes.'''
+    name = targets.split('_')
+    for trg in targets:
+        
+        if name[0] == 'ANIM':
+            description = name[2]
+        elif name[0] == 'c' or name[0] == 'l' or name[0] == 'r':
+            description = name[1]    
+        else:
+            description = name[0]
+
+        # returns selected object(s)' description string
+        return str(description)
 
 
 def createLocator(name, x, y, z):
@@ -111,14 +100,14 @@ def placeLocators(obj, center_loc, dist1_loc, dist2_loc):
     return middle_tx, middle_ty, middle_tz
 
 
-def attrLockAndHide(sel, exceptions):
+def attrLockAndHide(targets, exceptions):
     '''Lock and hide attributes based on user input, separated by spaces.'''
-    for each in sel:
-        attrs = cmds.listAttr(each, keyable=True) 
+    for target in targets:
+        attrs = cmds.listAttr(target, keyable=True) 
         
         if exceptions == 'all':
             for attr in attrs:
-                channel = '%s.%s' % (each, attr)
+                channel = '%s.%s' % (target, attr)
                 cmds.setAttr(channel, lock=True, keyable=False, channelBox=False)
                 
         elif exceptions != 'all':
@@ -126,7 +115,7 @@ def attrLockAndHide(sel, exceptions):
             
             for attr in range(len(transforms)):
                 try:
-                    channel = '%s.%s' % (each, transforms[attr])
+                    channel = '%s.%s' % (target, transforms[attr])
                     cmds.setAttr(channel, lock=True, keyable=False, channelBox=False)
                 except:
                     print channel, ' doesn\'t exist.'
@@ -134,21 +123,21 @@ def attrLockAndHide(sel, exceptions):
     return channel
 
 
-def getInputs(sel):
+def getInputs(targets):
     '''Get object input attributes.'''
-    if len(sel) > 1:
+    if len(targets) > 1:
         cmds.confirmDialog(
                            title='Too many objects.', 
                            message='Inputs can only be listed for one object at a time.'
                            )
         cmds.error('Inputs can only be listed for one object at a time.')
         
-    for each in range(len(sel)):
-        each = sel[each]
+    for trg in range(len(targets)):
+        trg = targets[trg]
         input_attrs = []
         
         try:
-            inputs = cmds.listHistory(each, pruneDagObjects=True, historyAttr=False)
+            inputs = cmds.listHistory(trg, pruneDagObjects=True, historyAttr=False)
             attrs = cmds.listAttr(inputs)
             
             for input in inputs:
@@ -160,7 +149,7 @@ def getInputs(sel):
                     input_attrs.append('%s.%s' % (input, attr))
                 
         except:
-            print 'No inputs on -- %s --' % (each)
+            print 'No inputs on -- %s --' % (trg)
             
     # returns a list with every input attribute
     return input_attrs

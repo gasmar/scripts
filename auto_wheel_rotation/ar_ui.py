@@ -16,8 +16,8 @@ class AutoRotateDialog(qw.QDialog):
     '''Main dialog class.'''
     WINDOW_TITLE = 'Auto Rotate'
     
-    MINIMUM_WIDTH = 420
-    MINIMUM_HEIGHT = 160
+    MINIMUM_WIDTH = 380
+    MINIMUM_HEIGHT = 106
     BTN_HEIGHT = 26
     
     dialog_instance = None
@@ -40,7 +40,7 @@ class AutoRotateDialog(qw.QDialog):
         return wrapInstance(long(main_window_ptr), qw.QWidget)
         
             
-    def __init__(self, parent=mayaMainWindow()):
+    def __init__(self, parent = mayaMainWindow()):
         '''Init method. Set basic credentials here.'''
         super(AutoRotateDialog, self).__init__(parent)
         
@@ -133,23 +133,24 @@ class AutoRotateDialog(qw.QDialog):
         buttons_layout.addSpacerItem(qw.QSpacerItem(5, 5, qw.QSizePolicy.Expanding))
         buttons_layout.addWidget(self.cancel_btn)
         
-        radio_layout     = qw.QHBoxLayout(self)
-        radio_layout.addWidget(self.option_combobox)
-        radio_layout.addWidget(self.z_radio)
-        radio_layout.addWidget(self.z_neg_radio)
-        radio_layout.addWidget(self.x_radio)
-        radio_layout.addWidget(self.x_neg_radio)
-        radio_layout.addWidget(self.rotate_slider)
-        radio_layout.addWidget(self.rotate_spin)
-        radio_layout.setSpacing(40)
-        radio_layout.setContentsMargins(0, 10, 0, 10)
-        radio_layout.addStretch()
+        rotate_layout    = qw.QHBoxLayout(self)
+        rotate_layout.addWidget(self.option_combobox)
+        rotate_layout.addSpacerItem(qw.QSpacerItem(5, 5, qw.QSizePolicy.Expanding))
+        rotate_layout.addWidget(self.z_radio)
+        rotate_layout.addWidget(self.z_neg_radio)
+        rotate_layout.addWidget(self.x_radio)
+        rotate_layout.addWidget(self.x_neg_radio)
+        rotate_layout.addWidget(self.rotate_slider)
+        rotate_layout.addWidget(self.rotate_spin)
+        rotate_layout.setSpacing(20)
+        rotate_layout.setContentsMargins(0, 10, 0, 10)
+        rotate_layout.addStretch()
         
         main_layout.addLayout(selection_layout)
-        main_layout.addLayout(radio_layout)
+        main_layout.addLayout(rotate_layout)
         main_layout.addLayout(buttons_layout)
-        main_layout.setContentsMargins(5, 10, 5, 10)
-        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(2, 2, 2, 2)
+        main_layout.setSpacing(5)
         main_layout.setAlignment(qc.Qt.AlignTop)
         
 
@@ -192,63 +193,78 @@ class AutoRotateDialog(qw.QDialog):
         self.x_radio.setVisible(not(index))
         self.x_neg_radio.setVisible(not(index))
 
+
     def onCreateClick(self):
         '''Create nodes for wheel rotation.'''
         targets = self.line_edit.text()
         targets = targets.split(' ')
         
-        for each in targets:
+        for trg in targets:
             # check for false target or no target at all
-            if not each:
+            if not trg:
                 return cmds.warning('No target assigned.')
-            elif cmds.objExists(each) == False:
-                cmds.warning(each, ' doesn\'t exist.')
+            elif cmds.objExists(trg) == False:
+                cmds.warning(trg, ' doesn\'t exist.')
                 continue
                 
-            # check for a parent
-            check_parent = aru.checkParent(each)
             # check for auto rotate setup on current target
-            check_connection = aru.checkForExistingAutoRotate(each)
+            check_base = autoRotate.checkForAutoRotateBase(trg)
+            check_connections = autoRotate.checkForAutoRotateConnections(trg)
             
             # target is connected to an auto rotation system
-            if check_connection == True:
+            if check_base == True or check_connections == True:
                 cmds.warning('Object is already connected to an auto rotation system.')
                 continue
                 
+            check_parent = aru.checkParent(trg)
             # if no parent, target is grouped to a world level node
             if check_parent != True:
                 name=check_parent
-                cmds.group(each, name=name)
+                cmds.group(trg, name=name)
                 
-            autoRotate.base(each)
-            autoRotate.autoRotate(each)
+            autoRotate.base(trg)
+            cmds.select(clear=True)
             
     def onConnectClick(self):
-        # TODO:
-        # Separate base() and autoRotate() functions
-        pass
+        
+        targets = self.line_edit.text()
+        targets = targets.split(' ')
+        
+        for trg in targets:
+            # check for false target or no target at all
+            if not trg:
+                return cmds.warning('No target assigned.')
+            elif cmds.objExists(trg) == False:
+                return cmds.warning(trg, ' doesn\'t exist.')
+            else:
+                "EVERYTHING'S COOL :DDDDDDDDDDDD"
+                
+            # check for auto rotate setup on current target
+            check_connection = autoRotate.checkForAutoRotateConnections(trg)
+            
+            # target is connected to an auto rotation system
+            if check_connection == True:
+                return cmds.warning('Object is already connected to an auto rotation system.')
+                
+            # autoRotate.base(trg)
+            autoRotate.autoRotate(trg)
+            cmds.select(clear=True)
             
     def onDisconnectClick(self):
         '''Delete all nodes related to autoRotate and parent initial geo to the world.'''
         targets = self.line_edit.text()
         targets = targets.split(' ')
         
-        for each in targets:
+        for trg in targets:
             # check for false target or no target at all
-            if not each:
+            if not trg:
                 return cmds.warning('No target assigned.')
-            elif cmds.objExists(each) == False:
-                cmds.warning(each, ' doesn\'t exist.')
-                continue
+            elif cmds.objExists(trg) == False:
+                return cmds.warning(trg, ' doesn\'t exist.')
             # check for auto rotate setup on current target
-            check_connection = aru.checkForExistingAutoRotate(each)
+            check_connection = autoRotate.checkForAutoRotateBase(trg)
             
-            # target is not connected to an auto rotation system
-            if check_connection == False:
-                return cmds.warning('Object is not connected to an auto rotation system.')
-            
-            # aru.undo(autoRotate.deleteAutoRotate(each))    
-            autoRotate.deleteAutoRotate(each)
+            autoRotate.deleteAutoRotate(trg)
             
         
     def showEvent(self, event):
