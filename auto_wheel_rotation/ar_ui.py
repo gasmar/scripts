@@ -164,9 +164,9 @@ class AutoRotateDialog(qw.QDialog):
         self.rotate_slider.valueChanged.connect(self.rotate_spin.setValue)
         self.rotate_spin.valueChanged.connect(self.rotate_slider.setValue)
                 
-        self.create_btn.clicked.connect(self.onCreateClick)
-        self.connect_btn.clicked.connect(self.onConnectClick)
-        self.disconnect_btn.clicked.connect(self.onDisconnectClick)
+        self.create_btn.clicked.connect(self.onCreate)
+        self.connect_btn.clicked.connect(self.onConnect)
+        self.disconnect_btn.clicked.connect(self.onDisconnect)
         self.cancel_btn.clicked.connect(self.close)
 
 
@@ -194,7 +194,7 @@ class AutoRotateDialog(qw.QDialog):
         self.x_neg_radio.setVisible(not(index))
 
 
-    def onCreateClick(self):
+    def onCreate(self):
         '''Create nodes for wheel rotation.'''
         targets = self.line_edit.text()
         targets = targets.split(' ')
@@ -225,7 +225,7 @@ class AutoRotateDialog(qw.QDialog):
             autoRotate.base(trg)
             cmds.select(clear=True)
             
-    def onConnectClick(self):
+    def onConnect(self):
         
         targets = self.line_edit.text()
         targets = targets.split(' ')
@@ -250,7 +250,7 @@ class AutoRotateDialog(qw.QDialog):
             autoRotate.autoRotate(trg)
             cmds.select(clear=True)
             
-    def onDisconnectClick(self):
+    def onDisconnect(self):
         '''Delete all nodes related to autoRotate and parent initial geo to the world.'''
         targets = self.line_edit.text()
         targets = targets.split(' ')
